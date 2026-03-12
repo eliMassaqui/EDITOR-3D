@@ -9,7 +9,7 @@ D:\EDITOR 3D>npm run dev
 > editor@0.0.0 dev
 > vite
 
-20:34:49 [vite] (client) Re-optimizing dependencies because vite config has changed
+20:34:49 [vite] (client) Re-optimizing dependencies because vite config has changed.
 
   VITE v7.3.1  ready in 677 ms
 
