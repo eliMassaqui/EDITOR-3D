@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WANDI STUDIO - EXPLODED VIEW</title>
+    <title>WANDI STUDIO - ENGINEERING</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #111111; font-family: sans-serif; }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #111111; font-family: 'Segoe UI', sans-serif; }
         canvas { display: block; width: 100vw; height: 100vh; }
         #ui-container {
             position: absolute;
@@ -16,25 +16,31 @@
             flex-direction: column;
             gap: 10px;
         }
-        .btn-import {
+        .btn-ui {
             background-color: #2563eb;
             color: white;
             border: none;
             padding: 12px 24px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: 0.2s;
         }
-        .btn-import:hover { background-color: #1d4ed8; }
+        .btn-ui:hover { background-color: #1d4ed8; transform: translateY(-2px); }
+        .btn-export { background-color: #059669; }
+        .btn-export:hover { background-color: #047857; }
         #file-input { display: none; }
     </style>
 </head>
 <body>
     <div id="ui-container">
-        <button class="btn-import" onclick="document.getElementById('file-input').click()">
-            IMPORTAR MODELO (GLB)
+        <button class="btn-ui" onclick="document.getElementById('file-input').click()">
+            IMPORTAR GLB
+        </button>
+        <button class="btn-ui btn-export" id="export-btn">
+            EXPORTAR SETUP (.JSON)
         </button>
         <input type="file" id="file-input" accept=".glb,.gltf">
     </div>
