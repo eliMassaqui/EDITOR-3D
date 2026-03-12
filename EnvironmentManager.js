@@ -13,7 +13,7 @@ export class EnvironmentManager {
      */
     setupAtmosphere() {
         // Tom grafite profundo: profissional e menos cansativo
-        const bgColor = 0x1a1a1a; 
+        const bgColor = 0xf5f5f5; 
         this.scene.background = new THREE.Color(bgColor);
         this.scene.fog = null; // Mantendo limpo conforme solicitado
     }
