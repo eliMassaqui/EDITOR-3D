@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 export class MaterialManager {
     constructor() {
@@ -13,49 +14,43 @@ export class MaterialManager {
     }
 
     applyToMesh(mesh, state) {
-        if (!mesh) return;
-        // Clone para evitar que alteração em uma peça mude todas as outras do modelo original
+        if (!mesh || !mesh.isMesh) return;
+        
+        // Garante clone único por peça
         if (!mesh.material.isCloned) {
             mesh.material = mesh.material.clone();
             mesh.material.isCloned = true;
         }
 
         const mat = mesh.material;
-        mat.transparent = true;
+        mat.transparent = state.opacity < 1.0;
         mat.color.set(state.color);
         mat.metalness = state.metalness;
         mat.roughness = state.roughness;
         mat.opacity = state.opacity;
         mat.wireframe = state.wireframe;
+        
+        // O emissivo de seleção é controlado apenas no loop de animação do main.js
     }
 
-    exportConfig(model) {
-        const config = {
-            studio: "Wandi Studio",
-            timestamp: new Date().toISOString(),
-            parts: []
-        };
+    exportFullModel(model) {
+        if (!model) return;
 
+        // Limpeza profunda antes de exportar para o Blender
         model.traverse(node => {
-            if (node.isMesh) {
-                config.parts.push({
-                    name: node.name,
-                    material: {
-                        color: '#' + node.material.color.getHexString(),
-                        metalness: node.material.metalness,
-                        roughness: node.material.roughness,
-                        opacity: node.material.opacity,
-                        wireframe: node.material.wireframe
-                    }
-                });
+            if (node.isMesh && node.material) {
+                node.material.emissive.setHex(0x000000);
+                node.material.emissiveIntensity = 0;
             }
         });
 
-        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `wandi_setup_${Date.now()}.json`;
-        link.click();
+        const exporter = new GLTFExporter();
+        exporter.parse(model, (result) => {
+            const blob = new Blob([result], { type: 'application/octet-stream' });
+            const saveLink = document.createElement('a');
+            saveLink.href = URL.createObjectURL(blob);
+            saveLink.download = `wandi_export_${Date.now()}.glb`;
+            saveLink.click();
+        }, (err) => console.error(err), { binary: true });
     }
 }
