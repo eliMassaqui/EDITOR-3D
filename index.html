@@ -3,56 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EDITOR 3D</title>
+    <title>WANDI STUDIO - EDITOR 3D</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #111111;
-            font-family: sans-serif;
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-        /* Estilo da Interface do Editor */
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #111111; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
         #ui-container {
             position: absolute;
             top: 20px;
             left: 20px;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         .btn-import {
             background-color: #2563eb;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 14px;
             font-weight: bold;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
         }
-        .btn-import:hover {
-            background-color: #1d4ed8;
-        }
-        /* Oculta o input real de arquivo */
-        #file-input {
-            display: none;
-        }
+        .btn-import:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+        #file-input { display: none; }
     </style>
 </head>
 <body>
     <div id="ui-container">
         <button class="btn-import" onclick="document.getElementById('file-input').click()">
-            Importar GLB/GLTF
+            IMPORTAR MODELO (GLB)
         </button>
         <input type="file" id="file-input" accept=".glb,.gltf">
     </div>
-
     <script type="module" src="/main.js"></script>
 </body>
 </html>

@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import GUI from 'lil-gui'; // Importação do lil-gui
+import GUI from 'lil-gui';
 
-// 1. Configuração Base da Cena
+// --- 1. CONFIGURAÇÃO DA CENA ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xeeeeee);
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+scene.background = new THREE.Color(0xffffff); // Fundo Branco Estúdio
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 5000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -17,167 +18,150 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-// 2. Iluminação
+// --- 2. GUIAS VISUAIS (DINÂMICOS) ---
+let gridHelper = new THREE.GridHelper(10, 10, 0xbbbbbb, 0xdddddd);
+scene.add(gridHelper);
+
+// --- 3. ILUMINAÇÃO ORIGINAL ---
 scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
-keyLight.position.set(2, 4, 4);
+keyLight.position.set(5, 10, 5);
 scene.add(keyLight);
+const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+fillLight.position.set(-5, 2, 5);
+scene.add(fillLight);
+const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+rimLight.position.set(0, 5, -10);
+scene.add(rimLight);
 
-// 3. Variáveis de Estado do Editor
+// --- 4. ESTADO E INTERFACE ---
 let currentModel = null;
-let meshesDict = {}; // Dicionário para guardar as peças por nome
-let selectedMesh = null; // A peça atualmente selecionada
+let selectedMesh = null;
+let meshesDict = {};
 
-// Configuração inicial do lil-gui
-const gui = new GUI({ title: 'Wandi Studio - Propriedades' });
+const gui = new GUI({ title: 'Wandi Studio Editor' });
 const editorState = {
-    selectedPartName: '',
+    partName: '',
     color: '#ffffff',
     metalness: 0.5,
     roughness: 0.5,
+    resetView: () => resetCamera()
 };
 
-// Pastas do GUI
-let partsFolder = gui.addFolder('Hierarquia de Peças');
-let materialFolder = gui.addFolder('Material Físico (PBR)');
-materialFolder.hide(); // Esconde até que uma peça seja selecionada
+const partsFolder = gui.addFolder('Hierarquia');
+const matFolder = gui.addFolder('Material PBR');
+gui.add(editorState, 'resetView').name('Centralizar Câmera');
 
-// Controladores do GUI que precisaremos atualizar dinamicamente
-let partSelectController;
-let colorController, metalnessController, roughnessController;
-
-// 4. Lógica de Seleção Lúcida
+// --- 5. LÓGICA DE SELEÇÃO ---
 function selectPart(mesh) {
-    // A. Desmarcar a peça anterior (remover o brilho de seleção)
-    if (selectedMesh) {
-        selectedMesh.material.emissive.setHex(0x000000); 
-    }
-
-    if (!mesh) {
-        materialFolder.hide();
-        return;
-    }
+    if (selectedMesh) selectedMesh.material.emissive.setHex(0x000000);
+    if (!mesh) { matFolder.hide(); return; }
 
     selectedMesh = mesh;
-
-    // B. Tornar o material único para não afetar outras peças
     if (selectedMesh.material) {
         selectedMesh.material = selectedMesh.material.clone();
     }
-
-    // C. Adicionar brilho emissivo leve para feedback visual da seleção
     selectedMesh.material.emissive.setHex(0x222222);
 
-    // D. Sincronizar o Estado do GUI com as propriedades reais da peça
-    editorState.selectedPartName = mesh.name;
+    editorState.partName = mesh.name;
     editorState.color = '#' + selectedMesh.material.color.getHexString();
     editorState.metalness = selectedMesh.material.metalness || 0;
-    editorState.roughness = selectedMesh.material.roughness !== undefined ? selectedMesh.material.roughness : 1;
+    editorState.roughness = selectedMesh.material.roughness || 0;
 
-    // E. Atualizar a Interface
-    partSelectController.updateDisplay();
-    materialFolder.show();
-    
-    // Recriar os controladores de material para garantir os callbacks corretos
-    if (colorController) colorController.destroy();
-    if (metalnessController) metalnessController.destroy();
-    if (roughnessController) roughnessController.destroy();
-
-    colorController = materialFolder.addColor(editorState, 'color').name('Cor Base').onChange(val => {
-        selectedMesh.material.color.set(val);
-    });
-    metalnessController = materialFolder.add(editorState, 'metalness', 0, 1, 0.01).name('Metalicidade').onChange(val => {
-        selectedMesh.material.metalness = val;
-    });
-    roughnessController = materialFolder.add(editorState, 'roughness', 0, 1, 0.01).name('Rugosidade').onChange(val => {
-        selectedMesh.material.roughness = val;
-    });
+    matFolder.children.forEach(c => c.destroy());
+    matFolder.addColor(editorState, 'color').name('Cor').onChange(v => selectedMesh.material.color.set(v));
+    matFolder.add(editorState, 'metalness', 0, 1).name('Metal').onChange(v => selectedMesh.material.metalness = v);
+    matFolder.add(editorState, 'roughness', 0, 1).name('Rugosidade').onChange(v => selectedMesh.material.roughness = v);
+    matFolder.show();
 }
 
-// 5. Carregamento do Modelo
+// --- 6. IMPORTAÇÃO E CENTRALIZAÇÃO PERFEITA ---
 const loader = new GLTFLoader();
+
 function loadModel(url) {
     loader.load(url, (gltf) => {
-        if (currentModel) scene.remove(currentModel);
-        
+        // Limpeza de memória
+        if (currentModel) {
+            scene.remove(currentModel);
+            currentModel.traverse(n => { if(n.isMesh) { n.geometry.dispose(); n.material.dispose(); }});
+        }
+
         currentModel = gltf.scene;
-        meshesDict = {}; // Limpa o dicionário anterior
-        const partNames = []; // Array para o dropdown do lil-gui
+        meshesDict = {};
+        const names = [];
 
         currentModel.traverse((node) => {
             if (node.isMesh) {
-                // Se a peça do SolidWorks não tiver nome, damos um nome genérico
-                const name = node.name || `Peca_${Math.random().toString(36).substr(2, 5)}`;
-                node.name = name;
-                meshesDict[name] = node;
-                partNames.push(name);
-                
-                // Melhorar visualização inicial
-                if(node.material) {
-                    node.material.envMapIntensity = 1.0;
-                    node.material.side = THREE.DoubleSide; // Previne faces transparentes do CAD
-                }
+                node.name = node.name || `Peça_${node.id}`;
+                meshesDict[node.name] = node;
+                names.push(node.name);
+                node.material.envMapIntensity = 1.5;
             }
         });
 
-        // Centralização
+        // CÁLCULO DE CAIXA DELIMITADORA
         const box = new THREE.Box3().setFromObject(currentModel);
+        const size = box.getSize(new THREE.Vector3());
         const center = box.getCenter(new THREE.Vector3());
-        currentModel.position.sub(center); // Subtrai o centro para mover para a origem (0,0,0)
-        
+
+        // POSICIONAMENTO: Centro em X/Z e BASE no Y=0
+        currentModel.position.x += (currentModel.position.x - center.x);
+        currentModel.position.z += (currentModel.position.z - center.z);
+        currentModel.position.y -= box.min.y; // Alinha base no zero
+        currentModel.position.y += 0.01;      // Pequeno offset para não piscar no grid
+
         scene.add(currentModel);
 
-        // Atualizar a Dropdown do lil-gui
-        if (partSelectController) partSelectController.destroy();
-        partSelectController = partsFolder.add(editorState, 'selectedPartName', partNames)
-            .name('Peça')
-            .onChange(name => selectPart(meshesDict[name]));
+        // AJUSTE DINÂMICO DO GRID (Largo e proporcional)
+        scene.remove(gridHelper);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        gridHelper = new THREE.GridHelper(maxDim * 4, 20, 0xbbbbbb, 0xdddddd);
+        scene.add(gridHelper);
 
-        selectPart(null); // Reseta a seleção
-        console.log(`Modelo carregado com ${partNames.length} peças.`);
+        // ATUALIZAR INTERFACE
+        partsFolder.children.forEach(c => c.destroy());
+        partsFolder.add(editorState, 'partName', names).name('Selecionar Peça').onChange(n => selectPart(meshesDict[n]));
+
+        resetCamera(size, maxDim);
+        selectPart(null);
     });
 }
 
-// 6. O Motor de Raycasting (Detetar Cliques)
+function resetCamera(size, maxDim) {
+    if (!currentModel) return;
+    const fov = camera.fov * (Math.PI / 180);
+    // Distância para ver o objeto completo com margem
+    let dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 2.5;
+
+    camera.position.set(dist, dist, dist);
+    
+    // Foca em 40% da altura do objeto para uma perspectiva natural
+    const targetY = size ? size.y * 0.4 : 0;
+    camera.lookAt(0, targetY, 0);
+    controls.target.set(0, targetY, 0);
+    
+    camera.updateProjectionMatrix();
+    controls.update();
+}
+
+// --- 7. EVENTOS ---
 const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
+const mouse = new THREE.Vector2();
 
-window.addEventListener('pointerdown', (event) => {
-    // Ignorar cliques se o utilizador estiver a clicar no UI do lil-gui ou no botão HTML
-    if (event.target.closest('.lil-gui') || event.target.closest('#ui-container')) return;
-
-    // Normalizar as coordenadas do rato (-1 a +1)
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // Lançar o raio a partir da câmara
-    raycaster.setFromCamera(pointer, camera);
-
-    if (currentModel) {
-        // Obter interseções com as peças do modelo
-        const intersects = raycaster.intersectObject(currentModel, true);
-
-        if (intersects.length > 0) {
-            // A primeira interseção é a peça mais próxima da câmara
-            const clickedMesh = intersects[0].object;
-            selectPart(clickedMesh);
-        } else {
-            // Clicou no vazio, desselecionar
-            selectPart(null);
-        }
-    }
+window.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.lil-gui') || e.target.closest('#ui-container')) return;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(currentModel, true);
+    selectPart(intersects.length > 0 ? intersects[0].object : null);
 });
 
-// Evento do Input de Ficheiro (Mantido igual)
-const fileInput = document.getElementById('file-input');
-if(fileInput) {
-    fileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) loadModel(URL.createObjectURL(file));
-    });
-}
+document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) loadModel(URL.createObjectURL(file));
+});
 
-// 7. Loop Principal
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
