@@ -5,21 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDITOR 3D</title>
     <style>
-        /* Remove margens e barras de rolagem para o canvas ocupar tudo */
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #111111;
+            font-family: sans-serif;
         }
         canvas {
             display: block;
             width: 100vw;
             height: 100vh;
         }
+        /* Estilo da Interface do Editor */
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        .btn-import {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: background 0.2s;
+        }
+        .btn-import:hover {
+            background-color: #1d4ed8;
+        }
+        /* Oculta o input real de arquivo */
+        #file-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div id="ui-container">
+        <button class="btn-import" onclick="document.getElementById('file-input').click()">
+            Importar GLB/GLTF
+        </button>
+        <input type="file" id="file-input" accept=".glb,.gltf">
+    </div>
+
     <script type="module" src="/main.js"></script>
 </body>
 </html>
