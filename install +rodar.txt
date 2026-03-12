@@ -1,10 +1,8 @@
 npm install three@0.183.2 vite gsap cannon-es @dimforge/rapier3d socket.io-client lil-gui postprocessing three-stdlib howler gl-matrix three-ik
 
-python -m http.server 8000
-
 npm create vite@latest
 
-
+python -m http.server 8000
 
 D:\EDITOR 3D>npm run dev
 
