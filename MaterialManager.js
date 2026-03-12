@@ -16,7 +16,6 @@ export class MaterialManager {
     applyToMesh(mesh, state) {
         if (!mesh || !mesh.isMesh) return;
         
-        // Garante clone único por peça
         if (!mesh.material.isCloned) {
             mesh.material = mesh.material.clone();
             mesh.material.isCloned = true;
@@ -30,13 +29,14 @@ export class MaterialManager {
         mat.opacity = state.opacity;
         mat.wireframe = state.wireframe;
         
-        // O emissivo de seleção é controlado apenas no loop de animação do main.js
+        // Mantém emissivo zerado para garantir fidelidade total à cor escolhida
+        mat.emissive.setHex(0x000000);
+        mat.emissiveIntensity = 0;
     }
 
     exportFullModel(model) {
         if (!model) return;
 
-        // Limpeza profunda antes de exportar para o Blender
         model.traverse(node => {
             if (node.isMesh && node.material) {
                 node.material.emissive.setHex(0x000000);
